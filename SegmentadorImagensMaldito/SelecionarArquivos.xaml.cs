@@ -1,24 +1,39 @@
 ﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 
 namespace SegmentadorImagensMaldito
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class SelecionarArquivos : Window
     {
         private readonly ObservableCollection<ImagemProcessar> arquivos = new ObservableCollection<ImagemProcessar>();
+        private static readonly List<string> extensoesValidas = new List<string> { ".JPG", ".JPE", ".BMP", ".GIF", ".PNG" };
 
-        public MainWindow()
+        public SelecionarArquivos()
         {
             InitializeComponent();
-            arquivosListBox.Visibility = Visibility.Hidden;
+            arquivosListBox.DataContext = arquivos;
+
+            var argumentos = Environment.GetCommandLineArgs();
+            if (argumentos.Length > 0)
+            {
+                foreach (var argumento in argumentos)
+                {
+                    if (extensoesValidas.Contains(Path.GetExtension(argumento).ToUpperInvariant()))
+                    {
+                        arquivos.Add(new ImagemProcessar(argumento));
+                    }
+                }
+            }
+
+            ArquivosAlterados();
         }
 
         #region ListBox
@@ -50,7 +65,6 @@ namespace SegmentadorImagensMaldito
                 {
                     arquivos.Add(new ImagemProcessar(caminhoArquivo));
                 }
-                arquivosListBox.DataContext = arquivos;
 
                 ArquivosAlterados();
             }

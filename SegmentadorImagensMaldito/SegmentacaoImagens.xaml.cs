@@ -11,6 +11,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using Microsoft.WindowsAPICodePack.Dialogs;
+using System.Globalization;
 
 namespace SegmentadorImagensMaldito
 {
@@ -138,7 +139,7 @@ namespace SegmentadorImagensMaldito
             if (botao.DataContext is ImagemProcessar imagemProcessar)
             {
                 int indiceSelecionado = arquivos.IndexOf(imagemProcessar);
-                if (indiceSelecionado == arquivos.Count) MessageBox.Show("Não há imagem para unir", "Alert", MessageBoxButton.OK, MessageBoxImage.Error);
+                if (indiceSelecionado == arquivos.Count - 1) MessageBox.Show("Não há imagem para unir", "Alert", MessageBoxButton.OK, MessageBoxImage.Error);
 
                 overlayGrid.Visibility = Visibility.Visible;
 
@@ -178,6 +179,94 @@ namespace SegmentadorImagensMaldito
                 overlayGrid.Visibility = Visibility.Hidden;
             }
         }
+
+        private async void DividirImagen_ClickDireito(object sender, MouseButtonEventArgs e)
+        {
+            Image imagem = (Image)sender;
+            if (imagem.DataContext is ImagemProcessar imagemProcessar)
+            {
+                int indiceSelecionado = arquivos.IndexOf(imagemProcessar);
+                if (indiceSelecionado == 0)
+                {
+                    MessageBox.Show("Não é possivel realizar essa operação na primeira imagem", "Alert", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                overlayGrid.Visibility = Visibility.Visible;
+
+                int altura = (int)(e.GetPosition(imagem).Y * (arquivos.ElementAt(indiceSelecionado).Imagem.Height / imagem.ActualHeight));
+                List<BitmapImage> novasImagens = null;
+                await Task.Factory.StartNew(() => {
+                    novasImagens = ProcessarImagens.SepararUnirImagem(arquivos.ElementAt(indiceSelecionado - 1), arquivos.ElementAt(indiceSelecionado), altura);
+                    Dispatcher.Invoke(() => {
+                        arquivos.RemoveAt(indiceSelecionado - 1);
+                        arquivos.RemoveAt(indiceSelecionado - 1);
+                        arquivos.Insert(indiceSelecionado - 1, new ImagemProcessar(novasImagens.ElementAt(1)));
+                        arquivos.Insert(indiceSelecionado - 1, new ImagemProcessar(novasImagens.ElementAt(0)));
+                    });
+                });
+
+                overlayGrid.Visibility = Visibility.Hidden;
+            }
+        }
+
+        private async void DividirImagen_ClickMeio(object sender, MouseButtonEventArgs e)
+        {
+            if (!(e.ButtonState == MouseButtonState.Pressed && e.ChangedButton == MouseButton.Middle)) return;
+
+            Image imagem = (Image)sender;
+            if (imagem.DataContext is ImagemProcessar imagemProcessar)
+            {
+                int indiceSelecionado = arquivos.IndexOf(imagemProcessar);
+                if (indiceSelecionado == 0 || indiceSelecionado == arquivos.Count - 1)
+                {
+                    MessageBox.Show("Não é possivel realizar essa operação na primeira ou ultima imagem", "Alert", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                overlayGrid.Visibility = Visibility.Visible;
+
+                int altura = (int)(e.GetPosition(imagem).Y * (arquivos.ElementAt(indiceSelecionado).Imagem.Height / imagem.ActualHeight));
+                List<BitmapImage> novasImagens = null;
+
+                await Task.Factory.StartNew(() => {
+                    novasImagens = ProcessarImagens.SepararUnirImagem(arquivos.ElementAt(indiceSelecionado - 1), arquivos.ElementAt(indiceSelecionado), altura);
+                    var imagemUnificada = ProcessarImagens.CombinarImagens(novasImagens.ElementAt(1), arquivos.ElementAt(indiceSelecionado + 1).Imagem);
+                    Dispatcher.Invoke(() => {
+                        arquivos.RemoveAt(indiceSelecionado - 1);
+                        arquivos.RemoveAt(indiceSelecionado - 1);
+                        arquivos.RemoveAt(indiceSelecionado - 1);
+                        arquivos.Insert(indiceSelecionado - 1, new ImagemProcessar(imagemUnificada));
+                        arquivos.Insert(indiceSelecionado - 1, new ImagemProcessar(novasImagens.ElementAt(0)));
+                    });
+                });
+
+                overlayGrid.Visibility = Visibility.Hidden;
+            }
+        }
         #endregion
+
+        public static string PorcentagemZoom = "0,5";
+
+        private void DiminuirZoom(object sender, MouseButtonEventArgs e)
+        {
+            PorcentagemZoom = (Convert.ToDouble(PorcentagemZoom) + 0.1).ToString("0.00", CultureInfo.InvariantCulture);
+        }
+
+        private void AumentarZoom(object sender, MouseButtonEventArgs e)
+        {
+            PorcentagemZoom = (Convert.ToDouble(PorcentagemZoom) - 0.1).ToString("0.00", CultureInfo.InvariantCulture);
+        }
+
+        private void Voltar_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBoxResult messageBoxResult = MessageBox.Show("Deseja retornar, arquivos não salvos serão perdidos!", "Retornar", MessageBoxButton.YesNo);
+            if (messageBoxResult == MessageBoxResult.Yes)
+            {
+                SelecionarArquivos selecionarArquivos = new SelecionarArquivos();
+                selecionarArquivos.Show();
+                segmentacaoWindow.Close();
+            }
+        }
     }
 }

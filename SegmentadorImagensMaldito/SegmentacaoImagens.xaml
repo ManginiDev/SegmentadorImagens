@@ -1,4 +1,4 @@
-﻿<Window x:Class="SegmentadorImagensMaldito.SegmentacaoImagens"
+﻿<Window x:Name="segmentacaoWindow" x:Class="SegmentadorImagensMaldito.SegmentacaoImagens"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -9,21 +9,27 @@
         Title="SegmentacaoImagens" Height="450" Width="800" WindowState="Maximized">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="80*"/>
-            <RowDefinition Height="10*"/>
+            <RowDefinition Height="4*"/>
+            <RowDefinition Height="70*"/>
+            <RowDefinition Height="4*"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="20*"/>
             <ColumnDefinition Width="3"/>
             <ColumnDefinition Width="80*"/>
         </Grid.ColumnDefinitions>
-        <Grid x:Name="overlayGrid" Panel.ZIndex="1000" Visibility="Hidden" Grid.RowSpan="2" Grid.ColumnSpan="3">
+        <Grid x:Name="overlayGrid" Panel.ZIndex="1000" Visibility="Hidden" Grid.RowSpan="3" Grid.ColumnSpan="3">
             <Grid.Background>
                 <SolidColorBrush Color="Black" Opacity=".5"/>
             </Grid.Background>
             <fa:ImageAwesome Icon="Refresh" Spin="True" SpinDuration="2"  Margin="200, 200, 200, 200" />
         </Grid>
-        <ListView x:Name="imagensMenoresListView" Margin="10,10,1,1" ItemsSource="{Binding}" ScrollViewer.CanContentScroll="False" SelectionChanged="MostrarItemSelecionado_SelecaoListaMenor">
+        <StackPanel HorizontalAlignment="Center" Margin="0,10,0,0" Orientation="Horizontal" VerticalAlignment="Top" Grid.ColumnSpan="3">
+            <fa:FontAwesome Icon="Info" FontSize="20" Height="20" Width="16" Foreground="Red" Margin="0,2,4,0"/>
+            <TextBlock x:Name="avisosText1" Text="Botão esquerdo para cortar em dois, botão direito para cortar e juntar com a image acima. 
+                       Botão do meio do mouse para cortar e distribuir as partes a cima e a baixo" TextWrapping="WrapWithOverflow" FontSize="12" Foreground="Red" Width="500"/>
+        </StackPanel>
+        <ListView x:Name="imagensMenoresListView" Margin="10,0,1,1" ItemsSource="{Binding}" ScrollViewer.CanContentScroll="False" SelectionChanged="MostrarItemSelecionado_SelecaoListaMenor" Grid.Row="1">
             <ListView.ItemContainerStyle>
                 <Style TargetType="ListViewItem">
                     <Setter Property="HorizontalContentAlignment" Value="Stretch"></Setter>
@@ -33,9 +39,9 @@
                 <DataTemplate>
                     <StackPanel>
                         <Image 
-                            MaxWidth="{Binding ActualWidth, ElementName=imagensMenoresListView, Converter={converters:PercentageConverter}, ConverterParameter='0,75'}"
-                            MaxHeight="{Binding ActualHeight, ElementName=imagensMenoresListView, Converter={converters:PercentageConverter}, ConverterParameter='0,2'}" 
-                            Source="{Binding Imagem}"/>
+                            MaxWidth="{Binding ActualWidth, ElementName=imagensMenoresListView, Converter={converters:PercentageConverter}, ConverterParameter='0,25'}"
+                            MaxHeight="{Binding ActualHeight, ElementName=imagensMenoresListView, Converter={converters:PercentageConverter}, ConverterParameter='0,25'}"
+                            Source="{Binding Thumbnail}"/>
                         <Button x:Name="Unir" Click="UnirAbaixo_Click" Width="100" Margin="10,0,0,0">
                             <StackPanel Orientation="Horizontal">
                                 <fa:FontAwesome Icon="Chain" Margin="0,2,10,0" FontSize="12"/>
@@ -46,8 +52,10 @@
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
-        <GridSplitter Grid.Row="0" Margin="0,10,0,0" Grid.Column="1" Width="3" HorizontalAlignment="Stretch" />
-        <ListView x:Name="imagensMaioresListView" Margin="0,10,10,1" Grid.Column="3" ItemsSource="{Binding}"  ScrollViewer.CanContentScroll="False" SelectionChanged="MostrarItemSelecionado_SelecaoListaMaior">
+        <GridSplitter Grid.Row="1" Width="3" HorizontalAlignment="Stretch" Grid.Column="1" />
+        <fa:FontAwesome Cursor="Hand" Icon="SearchPlus" Margin="20,0,0,0" FontSize="20"  Grid.Column="2" Grid.Row="1" Panel.ZIndex="100" HorizontalAlignment="Left" VerticalAlignment="Top" MouseDown="AumentarZoom"/>
+        <fa:FontAwesome Cursor="Hand" Icon="SearchMinus" Margin="3,0,0,0" FontSize="20"  Grid.Column="1" Grid.Row="1" Panel.ZIndex="100" HorizontalAlignment="Left" VerticalAlignment="Top" MouseDown="DiminuirZoom" Grid.ColumnSpan="2"/>
+        <ListView x:Name="imagensMaioresListView" Margin="2,0,10,1" Grid.Column="1" ItemsSource="{Binding}"  ScrollViewer.CanContentScroll="False" SelectionChanged="MostrarItemSelecionado_SelecaoListaMaior" Grid.Row="1" Grid.ColumnSpan="2">
             <ListView.ItemContainerStyle>
                 <Style TargetType="ListViewItem">
                     <Setter Property="HorizontalContentAlignment" Value="Stretch"></Setter>
@@ -62,23 +70,29 @@
             </ListView.ItemContainerStyle>
             <ListView.ItemTemplate>
                 <DataTemplate>
-                    <Image 
-                        MaxWidth="{Binding ActualWidth, ElementName=imagensMaioresListView, Converter={converters:PercentageConverter}, ConverterParameter='0,75'}"
-                        MaxHeight="{Binding ActualHeight, ElementName=imagensMaioresListView, Converter={converters:PercentageConverter}, ConverterParameter='0,9'}" 
+                    <Image x:Name="imagemMaior" 
+                        MaxWidth="{Binding ActualWidth, ElementName=imagensMaioresListView, Converter={converters:PercentageConverter}, ConverterParameter='0,1'}"
                         Source="{Binding Imagem}" 
                         PreviewMouseLeftButtonDown="DividirImagen_ClickEsquerdo" 
-                        Cursor="Cross"/>
+                        Cursor="Cross" PreviewMouseRightButtonDown="DividirImagen_ClickDireito" PreviewMouseDown="DividirImagen_ClickMeio">
+                    </Image>
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
-        <StackPanel Margin="7,0,0,0" Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Center" Grid.Row="1" Grid.Column="0">
+        <StackPanel Margin="7,0,0,0" Orientation="Vertical" VerticalAlignment="Center" Grid.Row="2" Grid.Column="0">
             <Label Content="Nome para salvar os arquivos" FontSize="10" Padding="0,0,0,0" Foreground="Gray"/>
             <TextBox x:Name="nomeBaseTextBox" TextWrapping="Wrap" Text="Imagens Separadas" Height="20"/>
         </StackPanel>
-        <Button x:Name="concluirButton" Click="Concluir_Click" Width="199" FontSize="16" FontWeight="Normal" Margin="10,0,0,0" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="1" Grid.ColumnSpan="3">
+        <Button x:Name="concluirButton" Click="Concluir_Click" Width="180" FontSize="16" FontWeight="Normal" Margin="153,0,0,0" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3">
             <StackPanel Orientation="Horizontal">
                 <fa:FontAwesome Icon="Check" Margin="0,2,10,0" FontSize="20"/>
                 <TextBlock FontSize="16"><Run Text="Concluir"/></TextBlock>
+            </StackPanel>
+        </Button>
+        <Button x:Name="voltarButton" Click="Voltar_Click" Width="108" FontSize="16" FontWeight="Normal" Margin="40,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" Grid.Row="2" Grid.Column="2">
+            <StackPanel Orientation="Horizontal">
+                <fa:FontAwesome Icon="Reply" Margin="0,2,10,0" FontSize="20"/>
+                <TextBlock FontSize="16"><Run Text="Voltar"/></TextBlock>
             </StackPanel>
         </Button>
     </Grid>

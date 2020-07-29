@@ -19,9 +19,33 @@ namespace SegmentadorImagensMaldito.Imagem
             return new List<BitmapImage>() { Bitmap2BitmapImage(primeiraImagem), Bitmap2BitmapImage(segundaImagem) };
         }
 
+        public static List<BitmapImage> SepararUnirImagem(ImagemProcessar imagemUnir, ImagemProcessar imagemSeparar, int altura)
+        {
+            var imagem = BitmapImage2Bitmap(imagemSeparar.Imagem);
+            var primeiraImagem = imagem.Clone(new Rectangle(0, 0, imagem.Width, altura), imagem.PixelFormat);
+            var segundaImagem = imagem.Clone(new Rectangle(0, altura, imagem.Width, imagem.Height - altura), imagem.PixelFormat);
+            var novaImagem = CombinarImagens(imagemUnir, primeiraImagem);
+
+            return new List<BitmapImage>() { novaImagem, Bitmap2BitmapImage(segundaImagem) };
+        }
+
         public static BitmapImage CombinarImagens(ImagemProcessar primeiraImagem, ImagemProcessar segundaImagem)
         {
-            List<Bitmap> imagens = new List<Bitmap>() { BitmapImage2Bitmap(primeiraImagem.Imagem), BitmapImage2Bitmap(segundaImagem.Imagem) };
+            return CombinarImagens(BitmapImage2Bitmap(primeiraImagem.Imagem), BitmapImage2Bitmap(segundaImagem.Imagem));
+        }
+
+        public static BitmapImage CombinarImagens(ImagemProcessar primeiraImagem, Bitmap segundaImagem)
+        {
+            return CombinarImagens(BitmapImage2Bitmap(primeiraImagem.Imagem), segundaImagem);
+        }
+        public static BitmapImage CombinarImagens(BitmapImage primeiraImagem, BitmapImage segundaImagem)
+        {
+            return CombinarImagens(BitmapImage2Bitmap(primeiraImagem), BitmapImage2Bitmap(segundaImagem));
+        }
+
+        public static BitmapImage CombinarImagens(Bitmap primeiraImagem, Bitmap segundaImagem)
+        {
+            List<Bitmap> imagens = new List<Bitmap>() { primeiraImagem, segundaImagem };
             Bitmap imagemFinal = null;
 
             try
@@ -37,7 +61,13 @@ namespace SegmentadorImagensMaldito.Imagem
                 int distanciaAltura = 0;
                 foreach (Bitmap image in imagens)
                 {
-                    graphics.DrawImage(image, new Rectangle(0, distanciaAltura, image.Width, image.Height));
+                    int distanciaLargura = 0;
+                    if (image.Width < largura)
+                    {
+                        distanciaLargura = (largura - image.Width)/ 2;
+                    }
+
+                    graphics.DrawImage(image, new Rectangle(distanciaLargura, distanciaAltura, image.Width, image.Height));
                     distanciaAltura += image.Height;
                 }
 
