@@ -70,12 +70,16 @@
             </ListView.ItemContainerStyle>
             <ListView.ItemTemplate>
                 <DataTemplate>
-                    <Image x:Name="imagemMaior" 
+                    <Border HorizontalAlignment="Stretch"
+                    BorderThickness="1"
+                    BorderBrush="LightBlue"  Panel.ZIndex="1">
+                        <Image x:Name="imagemMaior"  Panel.ZIndex="2"
                         MaxWidth="{Binding ActualWidth, ElementName=imagensMaioresListView, Converter={converters:PercentageConverter}, ConverterParameter='0,1'}"
                         Source="{Binding Imagem}" 
                         PreviewMouseLeftButtonDown="DividirImagen_ClickEsquerdo" 
                         Cursor="Cross" PreviewMouseRightButtonDown="DividirImagen_ClickDireito" PreviewMouseDown="DividirImagen_ClickMeio">
-                    </Image>
+                        </Image>
+                    </Border>
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
