@@ -10,14 +10,14 @@ namespace SegmentadorImagensMaldito
         public string Nome { get; private set; }
         public string CaminhoCompleto { get; private set; }
         public BitmapSource Thumbnail { get; private set; }
-        public BitmapImage Imagem { get; private set; }
+        public BitmapSource Imagem { get; private set; }
         
         public ImagemProcessar(string caminhoCompleto)
         {
             CaminhoCompleto = caminhoCompleto;
             Nome = Path.GetFileNameWithoutExtension(caminhoCompleto);
         }
-        public ImagemProcessar(BitmapImage imagem)
+        public ImagemProcessar(BitmapSource imagem)
         {
             Imagem = imagem;
             Thumbnail = new TransformedBitmap(Imagem, new ScaleTransform(0.25, 0.25));
@@ -25,22 +25,24 @@ namespace SegmentadorImagensMaldito
 
         public void CarregarImagem()
         {
-            Imagem = new BitmapImage();
+            BitmapImage novaImagem = new BitmapImage();
             var stream = File.OpenRead(CaminhoCompleto);
 
-            Imagem.BeginInit();
-            Imagem.CacheOption = BitmapCacheOption.OnLoad;
-            Imagem.StreamSource = stream;
-            Imagem.EndInit();
+            novaImagem.BeginInit();
+            novaImagem.CacheOption = BitmapCacheOption.OnLoad;
+            novaImagem.StreamSource = stream;
+            novaImagem.EndInit();
 
             stream.Close();
             stream.Dispose();
 
+            novaImagem.Freeze();
+            Imagem = novaImagem;
             Thumbnail = new TransformedBitmap(Imagem, new ScaleTransform(0.25, 0.25));
 
         }
 
-        public void AlterarImagem(BitmapImage imagem)
+        public void AlterarImagem(BitmapSource imagem)
         {
             Imagem = imagem;
             Thumbnail = new TransformedBitmap(Imagem, new ScaleTransform(0.25, 0.25));

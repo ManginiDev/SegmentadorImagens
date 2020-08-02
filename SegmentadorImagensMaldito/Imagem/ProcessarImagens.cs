@@ -2,48 +2,64 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.IO;
 using System.Linq;
+using System.Windows;
+using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 
 namespace SegmentadorImagensMaldito.Imagem
 {
     public class ProcessarImagens
     {
-        public static List<BitmapImage> SepararImagem(ImagemProcessar imagemProcessar, int altura)
+        public static List<BitmapSource> SepararImagem(ImagemProcessar imagemProcessar, int altura)
         {
-            var imagem = BitmapImage2Bitmap(imagemProcessar.Imagem);
+            var imagem = BitmapSource2Bitmap(imagemProcessar.Imagem);
             var primeiraImagem = imagem.Clone(new Rectangle(0, 0, imagem.Width, altura), imagem.PixelFormat);
             var segundaImagem = imagem.Clone(new Rectangle(0, altura, imagem.Width, imagem.Height - altura), imagem.PixelFormat);
 
-            return new List<BitmapImage>() { Bitmap2BitmapImage(primeiraImagem), Bitmap2BitmapImage(segundaImagem) };
+            return new List<BitmapSource>() { Bitmap2BitmapSource(primeiraImagem), Bitmap2BitmapSource(segundaImagem) };
         }
 
-        public static List<BitmapImage> SepararUnirImagem(ImagemProcessar imagemUnir, ImagemProcessar imagemSeparar, int altura)
+        public static List<BitmapSource> SepararUnirImagem(ImagemProcessar imagemUnir, ImagemProcessar imagemSeparar, int altura)
         {
-            var imagem = BitmapImage2Bitmap(imagemSeparar.Imagem);
+            var imagem = BitmapSource2Bitmap(imagemSeparar.Imagem);
             var primeiraImagem = imagem.Clone(new Rectangle(0, 0, imagem.Width, altura), imagem.PixelFormat);
             var segundaImagem = imagem.Clone(new Rectangle(0, altura, imagem.Width, imagem.Height - altura), imagem.PixelFormat);
             var novaImagem = CombinarImagens(imagemUnir, primeiraImagem);
 
-            return new List<BitmapImage>() { novaImagem, Bitmap2BitmapImage(segundaImagem) };
+            return new List<BitmapSource>() { novaImagem, Bitmap2BitmapSource(segundaImagem) };
         }
 
-        public static BitmapImage CombinarImagens(ImagemProcessar primeiraImagem, ImagemProcessar segundaImagem)
+        public static BitmapSource CombinarImagens(ImagemProcessar primeiraImagem, ImagemProcessar segundaImagem)
         {
-            return CombinarImagens(BitmapImage2Bitmap(primeiraImagem.Imagem), BitmapImage2Bitmap(segundaImagem.Imagem));
+            return CombinarImagens(BitmapSource2Bitmap(primeiraImagem.Imagem), BitmapSource2Bitmap(segundaImagem.Imagem));
         }
 
-        public static BitmapImage CombinarImagens(ImagemProcessar primeiraImagem, Bitmap segundaImagem)
+        public static BitmapSource CombinarImagens(List<ImagemProcessar> imagens)
         {
-            return CombinarImagens(BitmapImage2Bitmap(primeiraImagem.Imagem), segundaImagem);
-        }
-        public static BitmapImage CombinarImagens(BitmapImage primeiraImagem, BitmapImage segundaImagem)
-        {
-            return CombinarImagens(BitmapImage2Bitmap(primeiraImagem), BitmapImage2Bitmap(segundaImagem));
+            var imagemAtual = imagens.ElementAt(0).Imagem;
+            for (int indice = 1; indice < imagens.Count; indice++)
+            {
+                imagemAtual = CombinarImagens(imagemAtual, imagens.ElementAt(indice).Imagem);
+            }
+
+            return imagemAtual;
         }
 
-        public static BitmapImage CombinarImagens(Bitmap primeiraImagem, Bitmap segundaImagem)
+        public static BitmapSource CombinarImagens(Bitmap primeiraImagem, ImagemProcessar segundaImagem)
+        {
+            return CombinarImagens(primeiraImagem, BitmapSource2Bitmap(segundaImagem.Imagem));
+        }
+        public static BitmapSource CombinarImagens(ImagemProcessar primeiraImagem, Bitmap segundaImagem)
+        {
+            return CombinarImagens(BitmapSource2Bitmap(primeiraImagem.Imagem), segundaImagem);
+        }
+        public static BitmapSource CombinarImagens(BitmapSource primeiraImagem, BitmapSource segundaImagem)
+        {
+            return CombinarImagens(BitmapSource2Bitmap(primeiraImagem), BitmapSource2Bitmap(segundaImagem));
+        }
+
+        public static BitmapSource CombinarImagens(Bitmap primeiraImagem, Bitmap segundaImagem)
         {
             List<Bitmap> imagens = new List<Bitmap>() { primeiraImagem, segundaImagem };
             Bitmap imagemFinal = null;
@@ -64,14 +80,14 @@ namespace SegmentadorImagensMaldito.Imagem
                     int distanciaLargura = 0;
                     if (image.Width < largura)
                     {
-                        distanciaLargura = (largura - image.Width)/ 2;
+                        distanciaLargura = (largura - image.Width) / 2;
                     }
 
                     graphics.DrawImage(image, new Rectangle(distanciaLargura, distanciaAltura, image.Width, image.Height));
                     distanciaAltura += image.Height;
                 }
 
-                return Bitmap2BitmapImage(imagemFinal);
+                return Bitmap2BitmapSource(imagemFinal);
             }
             catch (Exception)
             {
@@ -84,33 +100,34 @@ namespace SegmentadorImagensMaldito.Imagem
             }
         }
 
-        private static Bitmap BitmapImage2Bitmap(BitmapImage bitmapImage)
+        public static Bitmap BitmapSource2Bitmap(BitmapSource bitmapSource)
         {
-            using MemoryStream outStream = new MemoryStream();
+            Bitmap bitmap = new Bitmap(bitmapSource.PixelWidth, bitmapSource.PixelHeight, PixelFormat.Format32bppPArgb);
+            BitmapData bitmapData = bitmap.LockBits(new Rectangle(System.Drawing.Point.Empty, bitmap.Size), ImageLockMode.WriteOnly, PixelFormat.Format32bppPArgb);
+            bitmapSource.CopyPixels(Int32Rect.Empty, bitmapData.Scan0, bitmapData.Height * bitmapData.Stride, bitmapData.Stride);
+            bitmap.UnlockBits(bitmapData);
 
-            BitmapEncoder enc = new BmpBitmapEncoder();
-            enc.Frames.Add(BitmapFrame.Create(bitmapImage));
-            enc.Save(outStream);
-
-            Bitmap bitmap = new Bitmap(outStream);
-            return new Bitmap(bitmap);
+            return bitmap;
         }
 
-        public static BitmapImage Bitmap2BitmapImage(Bitmap bitmap)
+        [System.Runtime.InteropServices.DllImport("gdi32.dll")]
+        public static extern bool DeleteObject(IntPtr hObject);
+
+        public static BitmapSource Bitmap2BitmapSource(Bitmap bitmap)
         {
-            using var memory = new MemoryStream();
+            IntPtr hBitmap = bitmap.GetHbitmap();
 
-            bitmap.Save(memory, ImageFormat.Png);
-            memory.Position = 0;
+            try
+            {
+                var bitmapSource = Imaging.CreateBitmapSourceFromHBitmap(hBitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                bitmapSource.Freeze();
 
-            var bitmapImage = new BitmapImage();
-            bitmapImage.BeginInit();
-            bitmapImage.StreamSource = memory;
-            bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-            bitmapImage.EndInit();
-            bitmapImage.Freeze();
-
-            return bitmapImage;
+                return bitmapSource;
+            }
+            finally
+            {
+                DeleteObject(hBitmap);
+            }
         }
     }
 }

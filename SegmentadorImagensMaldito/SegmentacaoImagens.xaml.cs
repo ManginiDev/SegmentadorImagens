@@ -26,13 +26,14 @@ namespace SegmentadorImagensMaldito
         {
             List<ImagemProcessar> fixos = new List<ImagemProcessar>();
 
-            FileInfo[] filesInfo = new DirectoryInfo($@"C:\Users\Mauricio\Desktop\14").GetFiles("*.jpg");
+            FileInfo[] filesInfo = new DirectoryInfo($@"D:\Downloads\14\14").GetFiles("*.jpg");
             foreach (var arquivo in filesInfo)
             {
                 fixos.Add(new ImagemProcessar(arquivo.FullName));
             }
 
             Inicializar(new ObservableCollection<ImagemProcessar>(OrdernarPorNumeroFinal(fixos)));
+            SegmentarAutomatico(5);
         }
 
         private static List<ImagemProcessar> OrdernarPorNumeroFinal(List<ImagemProcessar> caminhos)
@@ -50,9 +51,10 @@ namespace SegmentadorImagensMaldito
         }
 #endif
 
-        public SegmentacaoImagens(ObservableCollection<ImagemProcessar> imagensBase)
+        public SegmentacaoImagens(ObservableCollection<ImagemProcessar> imagensBase, int quadrosPorPagina = 0)
         {
             Inicializar(imagensBase);
+            if (quadrosPorPagina > 0) SegmentarAutomatico(quadrosPorPagina);
         }
 
         private void Inicializar(ObservableCollection<ImagemProcessar> imagensBase)
@@ -66,7 +68,21 @@ namespace SegmentadorImagensMaldito
             InitializeComponent();
             imagensMenoresListView.DataContext = arquivos;
             imagensMaioresListView.DataContext = arquivos;
+        }
 
+        private async void SegmentarAutomatico(int quadrosPorPagina)
+        {
+            overlayGrid.Visibility = Visibility.Visible;
+
+            await Task.Factory.StartNew(() => {
+                var imagensNovas = SegmentadorAutomatico.Segmentar(arquivos.ToList(), quadrosPorPagina);
+                Dispatcher.Invoke(() => {
+                    arquivos.Clear();
+                    imagensNovas.ForEach(x => arquivos.Add(new ImagemProcessar(x)));
+                });
+            });
+
+            overlayGrid.Visibility = Visibility.Hidden;
         }
         #region Salvar Arquivos
         private async void Concluir_Click(object sender, RoutedEventArgs e)
@@ -96,7 +112,11 @@ namespace SegmentadorImagensMaldito
             if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
             {
                 overlayGrid.Visibility = Visibility.Visible;
-                await SalvarArquivos(dialog.FileName);
+
+                var diretorio = dialog.FileName + "/SegmentadorImagensMaldito";
+                Directory.CreateDirectory(diretorio);
+                await SalvarArquivos(diretorio);
+
                 overlayGrid.Visibility = Visibility.Hidden;
                 MessageBox.Show("Arquivos Salvos", "Concluido", MessageBoxButton.OK, MessageBoxImage.Information);
             }
@@ -132,6 +152,22 @@ namespace SegmentadorImagensMaldito
         {
             imagensMenoresListView.ScrollIntoView(imagensMaioresListView.SelectedItem);
         }
+        private async void UnirTodas_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBoxResult messageBoxResult = MessageBox.Show("Deseja realmente unitor todas as imagens? Isso pode demorar bastante tempo.", "Unir Todas", MessageBoxButton.YesNo);
+            if (messageBoxResult == MessageBoxResult.No) return;
+
+            overlayGrid.Visibility = Visibility.Visible;
+            await Task.Factory.StartNew(() => {
+                var imagemUnida = ProcessarImagens.CombinarImagens(arquivos.ToList());
+                Dispatcher.Invoke(() => {
+                    arquivos.Clear();
+                    arquivos.Add(new ImagemProcessar(imagemUnida));
+                });
+            });
+
+            overlayGrid.Visibility = Visibility.Hidden;
+        }
 
         private async void UnirAbaixo_Click(object sender, RoutedEventArgs e)
         {
@@ -139,11 +175,11 @@ namespace SegmentadorImagensMaldito
             if (botao.DataContext is ImagemProcessar imagemProcessar)
             {
                 int indiceSelecionado = arquivos.IndexOf(imagemProcessar);
-                if (indiceSelecionado == arquivos.Count - 1) MessageBox.Show("Não há imagem para unir", "Alert", MessageBoxButton.OK, MessageBoxImage.Error);
+                if (indiceSelecionado == arquivos.Count - 1) MessageBox.Show("Não há imagem para unir", "Alerta", MessageBoxButton.OK, MessageBoxImage.Error);
 
                 overlayGrid.Visibility = Visibility.Visible;
 
-                BitmapImage novaImagem = null;
+                BitmapSource novaImagem = null;
                 await Task.Factory.StartNew(() => {
                     novaImagem = ProcessarImagens.CombinarImagens(arquivos.ElementAt(indiceSelecionado), arquivos.ElementAt(indiceSelecionado + 1));
                     Dispatcher.Invoke(() => {
@@ -165,8 +201,8 @@ namespace SegmentadorImagensMaldito
                 int indiceSelecionado = arquivos.IndexOf(imagemProcessar);
                 overlayGrid.Visibility = Visibility.Visible;
 
-                int altura = (int)(e.GetPosition(imagem).Y * (arquivos.ElementAt(indiceSelecionado).Imagem.Height / imagem.ActualHeight));
-                List<BitmapImage> novasImagens = null;
+                int altura = (int)(e.GetPosition(imagem).Y * (imagemProcessar.Imagem.PixelHeight / imagem.ActualHeight));
+                List<BitmapSource> novasImagens = null;
                 await Task.Factory.StartNew(() => {
                     novasImagens = ProcessarImagens.SepararImagem(arquivos.ElementAt(indiceSelecionado), altura);
                     Dispatcher.Invoke(() => {
@@ -194,8 +230,8 @@ namespace SegmentadorImagensMaldito
 
                 overlayGrid.Visibility = Visibility.Visible;
 
-                int altura = (int)(e.GetPosition(imagem).Y * (arquivos.ElementAt(indiceSelecionado).Imagem.Height / imagem.ActualHeight));
-                List<BitmapImage> novasImagens = null;
+                int altura = (int)(e.GetPosition(imagem).Y * (imagemProcessar.Imagem.PixelHeight / imagem.ActualHeight));
+                List<BitmapSource> novasImagens = null;
                 await Task.Factory.StartNew(() => {
                     novasImagens = ProcessarImagens.SepararUnirImagem(arquivos.ElementAt(indiceSelecionado - 1), arquivos.ElementAt(indiceSelecionado), altura);
                     Dispatcher.Invoke(() => {
@@ -224,15 +260,16 @@ namespace SegmentadorImagensMaldito
                     return;
                 }
 
+
                 overlayGrid.Visibility = Visibility.Visible;
 
                 int altura = (int)(e.GetPosition(imagem).Y * (arquivos.ElementAt(indiceSelecionado).Imagem.Height / imagem.ActualHeight));
-                List<BitmapImage> novasImagens = null;
+                List<BitmapSource> novasImagens = null;
 
                 await Task.Factory.StartNew(() => {
                     novasImagens = ProcessarImagens.SepararUnirImagem(arquivos.ElementAt(indiceSelecionado - 1), arquivos.ElementAt(indiceSelecionado), altura);
                     var imagemUnificada = ProcessarImagens.CombinarImagens(novasImagens.ElementAt(1), arquivos.ElementAt(indiceSelecionado + 1).Imagem);
-                    Dispatcher.Invoke(() => {
+                    Dispatcher.InvokeAsync(() => {
                         arquivos.RemoveAt(indiceSelecionado - 1);
                         arquivos.RemoveAt(indiceSelecionado - 1);
                         arquivos.RemoveAt(indiceSelecionado - 1);
@@ -245,6 +282,7 @@ namespace SegmentadorImagensMaldito
             }
         }
         #endregion
+        
 
         public static string PorcentagemZoom = "0,5";
 
