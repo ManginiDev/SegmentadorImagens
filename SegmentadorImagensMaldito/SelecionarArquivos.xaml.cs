@@ -67,17 +67,24 @@ namespace SegmentadorImagensMaldito
         #endregion
 
         #region Arquivos
+        OpenFileDialog openFileDialog;
+        private OpenFileDialog SelecionadorArquivo()
+        {
+            if(openFileDialog == null)
+            {
+                openFileDialog = new OpenFileDialog
+                {
+                    Multiselect = true,
+                    Filter = "Image files (*.jpg, *.jpeg, *.jpe, *.jfif, *.png) | *.jpg; *.jpeg; *.jpe; *.jfif; *.png"
+                };
+            }
+
+            return openFileDialog;
+        }
+
         private void EscolherArquivosClick(object sender, RoutedEventArgs e)
         {
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Multiselect = true;
-            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.jpe, *.jfif, *.png) | *.jpg; *.jpeg; *.jpe; *.jfif; *.png";
-#if DEBUG
-            openFileDialog.InitialDirectory = $@"C:\Users\Mauricio\Desktop\14";
-#else
-            openFileDialog.InitialDirectory = Directory.GetCurrentDirectory();
-#endif
-            if (openFileDialog.ShowDialog() == true)
+            if (SelecionadorArquivo().ShowDialog() == true)
             {
                 foreach (var caminhoArquivo in openFileDialog.FileNames)
                 {
