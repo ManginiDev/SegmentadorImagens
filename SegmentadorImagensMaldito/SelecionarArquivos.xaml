@@ -30,10 +30,16 @@
         </local:ImagemProcessarDragAndDropListBox>
         <Button x:Name="continuarButton" Content="Continuar" HorizontalAlignment="Left" Margin="10,96,0,0" VerticalAlignment="Top" Click="ContinuarClick" Width="199" FontSize="16" FontWeight="Normal" IsEnabled="False" Height="26"/>
         <Button x:Name="removerArquivosButton" Content="Remover Todos Arquivos" HorizontalAlignment="Left" Margin="10,66,0,0" VerticalAlignment="Top" Click="RemoverArquivosClick" Width="199" FontSize="16" FontWeight="Normal" IsEnabled="False" Height="26"/>
-        <StackPanel Margin="10,127,591,0" Orientation="Vertical" VerticalAlignment="Top" Grid.Column="0">
+        <StackPanel Margin="10,0,0,24" Orientation="Vertical" VerticalAlignment="Bottom" Grid.Column="0" HorizontalAlignment="Left" Width="199">
             <Label Content="Quantia de quadros por página" FontSize="10" Padding="0,0,0,0" Foreground="Gray"/>
-            <TextBox x:Name="quantiaQuadros" TextWrapping="Wrap" Height="20" Text="5" PreviewTextInput="NumberValidationTextBox"/>
+            <TextBox x:Name="quantiaQuadros" TextWrapping="Wrap" Height="20" Text="5" PreviewTextInput="NumberValidationTextBox" Width="42" HorizontalAlignment="Left"/>
+            <Label Content="Quadro inicia com diferença de (%)" FontSize="10" Padding="0,0,0,0" Foreground="Gray" Height="14" ToolTip="Quanto de diferença a linha atual precisa apresentar em relação a linha base (cor do fundo por exemplo) para que seja considerado a linha inicial de um quadro"/>
+            <Slider x:Name="semelhanca" Maximum="100" AutoToolTipPlacement="TopLeft" />
+            <Label Content="Quadro termina com semelhança em (%)" FontSize="10" Padding="0,0,0,0" Foreground="Gray" Height="14" ToolTip="Quanto de igualdade a linha atual precisa apresentar em relação a linha base para que seja considerado a linha final de um quadro"/>
+            <Slider x:Name="diferenca" Maximum="100" AutoToolTipPlacement="TopLeft" />
+            <Label Content="Cobertura da imagem antes de cortar (%)" FontSize="10" Padding="0,0,0,0" Foreground="Gray" Height="14"/>
+            <Slider x:Name="cobrir" Maximum="100" AutoToolTipPlacement="TopLeft" />
+            <Button x:Name="segmentarAutomaticoButton" Content="Segmentar Automatico" Click="SegmentarClick" Width="199" FontSize="16" FontWeight="Normal" IsEnabled="False" Height="26" Margin="0,5,0,0"/>
         </StackPanel>
-        <Button x:Name="segmentarAutomaticoButton" Content="Segmentar Automatico" HorizontalAlignment="Left" Margin="10,165,0,0" VerticalAlignment="Top" Click="SegmentarClick" Width="199" FontSize="16" FontWeight="Normal" IsEnabled="False" Height="26"/>
     </Grid>
 </Window>

@@ -51,8 +51,14 @@ namespace SegmentadorImagensMaldito
         }
 #endif
 
-        public SegmentacaoImagens(ObservableCollection<ImagemProcessar> imagensBase, int quadrosPorPagina = 0)
+        public SegmentacaoImagens(ObservableCollection<ImagemProcessar> imagensBase, int quadrosPorPagina = 0, double porcentagemToleranciaDiferente = 0, double porcentagemToleranciaIgual = 0, double porcentagemMaximaDaImagemParaCobrirAntesDeJuntar = 0)
         {
+            Properties.Settings.Default.quadrosPorPagina = quadrosPorPagina;
+            Properties.Settings.Default.porcentagemToleranciaDiferente = porcentagemToleranciaDiferente;
+            Properties.Settings.Default.porcentagemToleranciaIgual = porcentagemToleranciaIgual;
+            Properties.Settings.Default.porcentagemMaximaDaImagemParaCobrirAntesDeJuntar = porcentagemMaximaDaImagemParaCobrirAntesDeJuntar;
+            Properties.Settings.Default.Save();
+
             Inicializar(imagensBase);
             if (quadrosPorPagina > 0) SegmentarAutomatico(quadrosPorPagina);
         }
@@ -68,14 +74,45 @@ namespace SegmentadorImagensMaldito
             InitializeComponent();
             imagensMenoresListView.DataContext = arquivos;
             imagensMaioresListView.DataContext = arquivos;
+
+            quantiaQuadros.Text = Properties.Settings.Default.quadrosPorPagina.ToString();
+            diferenca.Value = Properties.Settings.Default.porcentagemToleranciaDiferente * 100;
+            semelhanca.Value = Properties.Settings.Default.porcentagemToleranciaIgual * 100;
+            cobrir.Value = Properties.Settings.Default.porcentagemMaximaDaImagemParaCobrirAntesDeJuntar * 100;
         }
 
+        private void NumberValidationTextBox(object sender, TextCompositionEventArgs e)
+        {
+            Regex regex = new Regex("[^0-9]+");
+            e.Handled = regex.IsMatch(e.Text);
+        }
+
+        #region Segmentador Automatico
+
+        private void SalvarPropriedadesSegmentadorAutomatico()
+        {
+            Properties.Settings.Default.quadrosPorPagina = Convert.ToInt32(quantiaQuadros.Text);
+            Properties.Settings.Default.porcentagemToleranciaDiferente = diferenca.Value / 100;
+            Properties.Settings.Default.porcentagemToleranciaIgual = semelhanca.Value / 100;
+            Properties.Settings.Default.porcentagemMaximaDaImagemParaCobrirAntesDeJuntar = cobrir.Value / 100;
+            Properties.Settings.Default.Save();
+        }
+
+        private void SegmentarClick(object sender, RoutedEventArgs e)
+        {
+            SalvarPropriedadesSegmentadorAutomatico();
+            SegmentarAutomatico(Convert.ToInt32(quantiaQuadros.Text));
+        }
+
+        private SegmentadorAutomatico segmentadorAutomatico;
         private async void SegmentarAutomatico(int quadrosPorPagina)
         {
             overlayGrid.Visibility = Visibility.Visible;
 
+            segmentadorAutomatico ??= new SegmentadorAutomatico();
+            segmentadorAutomatico.RecarregarPorSettings();
             await Task.Factory.StartNew(() => {
-                var imagensNovas = SegmentadorAutomatico.Segmentar(arquivos.ToList(), quadrosPorPagina);
+                var imagensNovas = segmentadorAutomatico.Segmentar(arquivos.ToList(), quadrosPorPagina);
                 Dispatcher.Invoke(() => {
                     arquivos.Clear();
                     imagensNovas.ForEach(x => arquivos.Add(new ImagemProcessar(x)));
@@ -84,6 +121,8 @@ namespace SegmentadorImagensMaldito
 
             overlayGrid.Visibility = Visibility.Hidden;
         }
+        #endregion
+
         #region Salvar Arquivos
         private async void Concluir_Click(object sender, RoutedEventArgs e)
         {
@@ -282,19 +321,6 @@ namespace SegmentadorImagensMaldito
             }
         }
         #endregion
-        
-
-        public static string PorcentagemZoom = "0,5";
-
-        private void DiminuirZoom(object sender, MouseButtonEventArgs e)
-        {
-            PorcentagemZoom = (Convert.ToDouble(PorcentagemZoom) + 0.1).ToString("0.00", CultureInfo.InvariantCulture);
-        }
-
-        private void AumentarZoom(object sender, MouseButtonEventArgs e)
-        {
-            PorcentagemZoom = (Convert.ToDouble(PorcentagemZoom) - 0.1).ToString("0.00", CultureInfo.InvariantCulture);
-        }
 
         private void Voltar_Click(object sender, RoutedEventArgs e)
         {

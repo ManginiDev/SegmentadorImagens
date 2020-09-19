@@ -16,9 +16,10 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="20*"/>
             <ColumnDefinition Width="3"/>
-            <ColumnDefinition Width="80*"/>
+            <ColumnDefinition Width="70*"/>
+            <ColumnDefinition Width="10*"/>
         </Grid.ColumnDefinitions>
-        <Grid x:Name="overlayGrid" Panel.ZIndex="1000" Visibility="Hidden" Grid.RowSpan="3" Grid.ColumnSpan="3">
+        <Grid x:Name="overlayGrid" Panel.ZIndex="1000" Visibility="Hidden" Grid.RowSpan="3" Grid.ColumnSpan="4">
             <Grid.Background>
                 <SolidColorBrush Color="Black" Opacity=".5"/>
             </Grid.Background>
@@ -30,7 +31,7 @@
                 <TextBlock FontSize="10"><Run Text="Unir Todas"/></TextBlock>
             </StackPanel>
         </Button>
-        <StackPanel HorizontalAlignment="Center" Margin="0,10,0,0" Orientation="Horizontal" VerticalAlignment="Top" Grid.ColumnSpan="3">
+        <StackPanel HorizontalAlignment="Center" Margin="0,10,0,0" Orientation="Horizontal" VerticalAlignment="Top" Grid.ColumnSpan="4">
             <fa:FontAwesome Icon="Info" FontSize="20" Height="20" Width="16" Foreground="Red" Margin="0,2,4,0"/>
             <TextBlock x:Name="avisosText1" Text="Botão esquerdo para cortar em dois, botão direito para cortar e juntar com a image acima. 
                        Botão do meio do mouse para cortar e distribuir as partes a cima e a baixo" TextWrapping="WrapWithOverflow" FontSize="12" Foreground="Red" Width="500"
@@ -60,8 +61,6 @@
             </ListView.ItemTemplate>
         </ListView>
         <GridSplitter Grid.Row="1" Width="3" HorizontalAlignment="Stretch" Grid.Column="1" />
-        <fa:FontAwesome Cursor="Hand" Icon="SearchPlus" Margin="20,0,0,0" FontSize="20"  Grid.Column="2" Grid.Row="1" Panel.ZIndex="100" HorizontalAlignment="Left" VerticalAlignment="Top" MouseDown="AumentarZoom"/>
-        <fa:FontAwesome Cursor="Hand" Icon="SearchMinus" Margin="3,0,0,0" FontSize="20"  Grid.Column="1" Grid.Row="1" Panel.ZIndex="100" HorizontalAlignment="Left" VerticalAlignment="Top" MouseDown="DiminuirZoom" Grid.ColumnSpan="2"/>
         <ListView x:Name="imagensMaioresListView" Margin="2,0,10,1" Grid.Column="1" ItemsSource="{Binding}"  ScrollViewer.CanContentScroll="False" SelectionChanged="MostrarItemSelecionado_SelecaoListaMaior" Grid.Row="1" Grid.ColumnSpan="2">
             <ListView.ItemContainerStyle>
                 <Style TargetType="ListViewItem">
@@ -106,5 +105,16 @@
                 <TextBlock FontSize="16"><Run Text="Voltar"/></TextBlock>
             </StackPanel>
         </Button>
+        <StackPanel Margin="0,125,0,0" Orientation="Vertical" VerticalAlignment="Top" Grid.Column="3" HorizontalAlignment="Center" Width="159" Grid.Row="1" Grid.RowSpan="2">
+            <Label Content="Quantia de quadros por página" FontSize="10" Padding="0,0,0,0" Foreground="Gray"/>
+            <TextBox x:Name="quantiaQuadros" TextWrapping="Wrap" Height="20" Text="5" PreviewTextInput="NumberValidationTextBox" Width="42" HorizontalAlignment="Left"/>
+            <Label Content="Quadro inicia com diferença de (%)" FontSize="10" Padding="0,0,0,0" Foreground="Gray" Height="14" ToolTip="Quanto de diferença a linha atual precisa apresentar em relação a linha base (cor do fundo por exemplo) para que seja considerado a linha inicial de um quadro"/>
+            <Slider x:Name="semelhanca" Maximum="100" AutoToolTipPlacement="TopLeft" />
+            <Label Content="Quadro termina com semelhança em (%)" FontSize="10" Padding="0,0,0,0" Foreground="Gray" Height="14" ToolTip="Quanto de igualdade a linha atual precisa apresentar em relação a linha base para que seja considerado a linha final de um quadro"/>
+            <Slider x:Name="diferenca" Maximum="100" AutoToolTipPlacement="TopLeft" />
+            <Label Content="Cobertura da imagem antes de cortar (%)" FontSize="10" Padding="0,0,0,0" Foreground="Gray" Height="14"/>
+            <Slider x:Name="cobrir" Maximum="100" AutoToolTipPlacement="TopLeft" />
+            <Button x:Name="segmentarAutomaticoButton" Content="Segmentar Automagico" Click="SegmentarClick" Width="143" FontSize="12" FontWeight="Normal" Height="26" Margin="0,5,0,0"/>
+        </StackPanel>
     </Grid>
 </Window>

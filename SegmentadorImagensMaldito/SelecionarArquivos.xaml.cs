@@ -27,7 +27,20 @@ namespace SegmentadorImagensMaldito
             var argumentos = Environment.GetCommandLineArgs();
             if (argumentos.Length > 0)
             {
-                foreach (var argumento in OrdernarPorNumeroFinal(argumentos.ToList()))
+                List<string> listarArgumentos = new List<string>();
+                foreach(var argumento in argumentos)
+                {
+                    if (Directory.Exists(argumento))
+                    {
+                        listarArgumentos.AddRange(Directory.EnumerateFiles(argumento));
+                    } 
+                    else
+                    {
+                        listarArgumentos.Add(argumento);
+                    }
+                }
+
+                foreach (var argumento in OrdernarPorNumeroFinal(listarArgumentos))
                 {
                     if (extensoesValidas.Contains(Path.GetExtension(argumento).ToUpperInvariant()))
                     {
@@ -36,7 +49,21 @@ namespace SegmentadorImagensMaldito
                 }
             }
 
+            DefinirValoresSegmentadorAutomatico();
             ArquivosAlterados();
+        }
+
+        private void DefinirValoresSegmentadorAutomatico()
+        {
+            quantiaQuadros.Text = Properties.Settings.Default.quadrosPorPagina.ToString();
+            diferenca.Value = Properties.Settings.Default.porcentagemToleranciaDiferente * 100;
+            semelhanca.Value = Properties.Settings.Default.porcentagemToleranciaIgual * 100;
+            cobrir.Value = Properties.Settings.Default.porcentagemMaximaDaImagemParaCobrirAntesDeJuntar * 100;
+
+            quantiaQuadros.Text = quantiaQuadros.Text == "0" ? "5" : quantiaQuadros.Text;
+            diferenca.Value = diferenca.Value == 0 ? 70 : diferenca.Value;
+            semelhanca.Value = semelhanca.Value == 0 ? 10 : semelhanca.Value;
+            cobrir.Value = cobrir.Value == 0 ? 100 : cobrir.Value;
         }
 
         private static List<string> OrdernarPorNumeroFinal(List<string> caminhos)
@@ -133,14 +160,20 @@ namespace SegmentadorImagensMaldito
         }
 
         private void NumberValidationTextBox(object sender, TextCompositionEventArgs e)
-            {
-                Regex regex = new Regex("[^0-9]+");
-                e.Handled = regex.IsMatch(e.Text);
-            }
+        {
+            Regex regex = new Regex("[^0-9]+");
+            e.Handled = regex.IsMatch(e.Text);
+        }
 
         private void SegmentarClick(object sender, RoutedEventArgs e)
         {
-            SegmentacaoImagens segmentacaoImagens = new SegmentacaoImagens(arquivos, Convert.ToInt32(quantiaQuadros.Text))
+            SegmentacaoImagens segmentacaoImagens = new SegmentacaoImagens(
+                arquivos, 
+                Convert.ToInt32(quantiaQuadros.Text), 
+                Convert.ToDouble(diferenca.Value) / 100,
+                Convert.ToDouble(semelhanca.Value) / 100, 
+                Convert.ToDouble(cobrir.Value) / 100
+            )
             {
                 WindowState = WindowState.Maximized
             };

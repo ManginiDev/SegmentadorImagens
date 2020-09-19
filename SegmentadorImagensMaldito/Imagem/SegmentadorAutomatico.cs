@@ -9,13 +9,30 @@ namespace SegmentadorImagensMaldito.Imagem
 {
     public class SegmentadorAutomatico
     {
-        public static double porcentagemToleranciaDiferente = 0.7;
-        public static double porcentagemToleranciaIgual = 0.10;
-        public static double porcentagemMaximaDaImagemParaCobrirAntesDeJuntar = 0.90;
+        double porcentagemToleranciaDiferente { get; set; }
+        double porcentagemToleranciaIgual { get; set; }
+        double porcentagemMaximaDaImagemParaCobrirAntesDeJuntar { get; set; }
+        int numeroLinhasParaAmostragemLinhaBase { get; set; }
 
-        public static List<BitmapSource> Segmentar(List<ImagemProcessar> imagens, int quadrosPorPagina)
+        public static SegmentadorAutomatico InicializarPorSettings()
         {
-            var linhaBase = BytesLinha(ProcessarImagens.BitmapSource2Bitmap(imagens.ElementAt(0).Imagem), 0);
+            var segmentador = new SegmentadorAutomatico();
+            segmentador.RecarregarPorSettings();
+
+            return segmentador;
+        }
+
+        public void RecarregarPorSettings()
+        {
+            porcentagemToleranciaDiferente = Properties.Settings.Default.porcentagemToleranciaDiferente;
+            porcentagemToleranciaIgual = Properties.Settings.Default.porcentagemToleranciaIgual;
+            porcentagemMaximaDaImagemParaCobrirAntesDeJuntar = Properties.Settings.Default.porcentagemMaximaDaImagemParaCobrirAntesDeJuntar;
+            numeroLinhasParaAmostragemLinhaBase = Properties.Settings.Default.numeroLinhasParaAmostragemLinhaBase;
+        }
+
+        public List<BitmapSource> Segmentar(List<ImagemProcessar> imagens, int quadrosPorPagina)
+        {
+            var linhaBase = LinhaBase(ProcessarImagens.BitmapSource2Bitmap(imagens.ElementAt(0).Imagem));
 
             int indiceImagemAtual = 0;
             int alturaAtual = 0;
@@ -28,7 +45,6 @@ namespace SegmentadorImagensMaldito.Imagem
                 {
                     if (alturaAtual / (double)bitmapAtual.Height > porcentagemMaximaDaImagemParaCobrirAntesDeJuntar) break;
 
-                    var pixelAtual = bitmapAtual.GetPixel(0, alturaAtual);
                     var porcentagemIgualdade = PorcentagemIgualdadeLinhas(linhaBase, bitmapAtual, alturaAtual);
                     if (!encontrouQuadro && porcentagemIgualdade > porcentagemToleranciaDiferente)
                     {
@@ -43,19 +59,22 @@ namespace SegmentadorImagensMaldito.Imagem
 
                 if (quadrosAtuais == quadrosPorPagina)
                 {
-                    var imagensSeparadas = ProcessarImagens.SepararImagem(imagens.ElementAt(indiceImagemAtual), alturaAtual);
-                    imagens.RemoveAt(indiceImagemAtual);
-                    imagens.Insert(indiceImagemAtual, new ImagemProcessar(imagensSeparadas.ElementAt(0)));
+                    if(alturaAtual < imagens.ElementAt(indiceImagemAtual).Imagem.Height)
+                    {
+                        var imagensSeparadas = ProcessarImagens.SepararImagem(imagens.ElementAt(indiceImagemAtual), alturaAtual);
+                        imagens.RemoveAt(indiceImagemAtual);
+                        imagens.Insert(indiceImagemAtual, new ImagemProcessar(imagensSeparadas.ElementAt(0)));
 
-                    if (imagens.Count() - 1 == indiceImagemAtual)
-                    {
-                        imagens.Add(new ImagemProcessar(imagensSeparadas.ElementAt(1)));
-                    }
-                    else
-                    {
-                        var novaImagem = ProcessarImagens.CombinarImagens(imagensSeparadas.ElementAt(1), imagens.ElementAt(indiceImagemAtual + 1).Imagem);
-                        imagens.RemoveAt(indiceImagemAtual + 1);
-                        imagens.Insert(indiceImagemAtual + 1, new ImagemProcessar(novaImagem));
+                        if (imagens.Count() - 1 == indiceImagemAtual)
+                        {
+                            imagens.Add(new ImagemProcessar(imagensSeparadas.ElementAt(1)));
+                        }
+                        else
+                        {
+                            var novaImagem = ProcessarImagens.CombinarImagens(imagensSeparadas.ElementAt(1), imagens.ElementAt(indiceImagemAtual + 1).Imagem);
+                            imagens.RemoveAt(indiceImagemAtual + 1);
+                            imagens.Insert(indiceImagemAtual + 1, new ImagemProcessar(novaImagem));
+                        }
                     }
 
                     alturaAtual = 0;
@@ -82,6 +101,38 @@ namespace SegmentadorImagensMaldito.Imagem
             }
             
             return imagens.Select(x => x.Imagem).ToList();
+        }
+
+        private byte[] LinhaBase(Bitmap bitmap)
+        {
+            Dictionary<byte[], double> linhas = new Dictionary<byte[], double>();
+            for (int indice = 0; indice < numeroLinhasParaAmostragemLinhaBase; indice++) linhas.Add(BytesLinha(bitmap, indice), 0D);
+            for (int indicePrincipal = 0; indicePrincipal < linhas.Count; indicePrincipal++)
+            {
+                double totalDiferenca = 0D;
+                for (int indiceSecundario = 0; indiceSecundario < linhas.Count; indiceSecundario++)
+                {
+                    if (indicePrincipal != indiceSecundario)
+                    {
+                        totalDiferenca += PorcentagemIgualdadeByteArray(linhas.ElementAt(indicePrincipal).Key, linhas.ElementAt(indiceSecundario).Key);
+                    }
+
+                    linhas[linhas.ElementAt(indicePrincipal).Key] = totalDiferenca;
+                }
+            }
+
+            return linhas.OrderBy(x => x.Value).FirstOrDefault().Key;
+        }
+
+        private static double PorcentagemIgualdadeByteArray(byte[] valor1, byte[] valor2)
+        {
+            int diferentes = 0;
+            for (int indice = 0; indice < valor1.Length; indice++)
+            {
+                if (valor1[indice] != valor2[indice]) diferentes++;
+            }
+
+            return diferentes / (double)valor1.Length;
         }
 
         private static byte[] BytesLinha(Bitmap bitmap, int altura)
